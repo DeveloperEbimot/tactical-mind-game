@@ -176,27 +176,29 @@ export function buildSquad(
   const r = mulberry(seed);
   const names = side === "home" ? HOME_NAMES : AWAY_NAMES;
   const club = side === "home" ? "Ballers FC" : "Rival United";
-  return FORMATIONS[formation].slots.map((slot: Slot, i) => ({
+  return FORMATIONS[formation]!.slots.map((slot: Slot, i) => ({
     id: `${side}-${i}`,
-    name: names[i],
+    name: names[i]!,
     num: i === 0 ? 1 : i + 1,
     role: slot.role,
     label: slot.label,
     club,
     ratings: ratingsFor(slot.role, r),
-    gkStyle: slot.role === "GK" ? GK_STYLES[Math.floor(r() * GK_STYLES.length)] : undefined,
+    ...(slot.role === "GK"
+      ? { gkStyle: GK_STYLES[Math.floor(r() * GK_STYLES.length)]! }
+      : {}),
     stamina: 100,
   }));
 }
 
 /** Keeps player identities but re-labels/re-positions them for a new formation. */
 export function reshape(players: Player[], formation: FormationName): Player[] {
-  const slots = FORMATIONS[formation].slots;
+  const slots = FORMATIONS[formation]!.slots;
   const pool = [...players];
   const gk = pool.shift()!;
   const byRole = (role: Role) => {
     const idx = pool.findIndex((p) => p.role === role);
-    return idx >= 0 ? pool.splice(idx, 1)[0] : pool.shift()!;
+    return idx >= 0 ? pool.splice(idx, 1)[0]! : pool.shift()!;
   };
   const out: Player[] = [{ ...gk, label: "GK", role: "GK" }];
   slots.slice(1).forEach((slot) => {

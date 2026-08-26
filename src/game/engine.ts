@@ -100,13 +100,13 @@ export function resolveBattle(opts: {
   const a =
     weighted(opts.attacker, WEIGHTS[opts.action]) +
     MATRIX[opts.action][opts.response] +
-    FORMATIONS[opts.attackFormation].attack * 0.8 +
+    FORMATIONS[opts.attackFormation]!.attack * 0.8 +
     tacticBonus(opts.attackTactic, "attack") +
     opts.momentum * 0.08 -
     opts.chain * 2;
   const d =
     weighted(opts.defender, DEF_WEIGHTS[opts.response]) +
-    FORMATIONS[opts.defenceFormation].defence * 0.8 +
+    FORMATIONS[opts.defenceFormation]!.defence * 0.8 +
     tacticBonus(opts.defenceTactic, "defence");
 
   const roll = (Math.random() - 0.5) * 26; // controlled randomness — upsets happen
@@ -140,9 +140,9 @@ export function pickAiResponse(action: AttackAction | null): DefenceResponse {
       sprint: "drop",
       shoot: "press",
     };
-    return counter[action];
+    return counter[action]!;
   }
-  return all[Math.floor(Math.random() * all.length)];
+  return all[Math.floor(Math.random() * all.length)]!;
 }
 
 export function pickAiAction(progress: number, carrier: Player): AttackAction {

@@ -34,10 +34,10 @@ export function Pitch({
   const ballY = lane;
 
   const build = (team: TeamState, side: "home" | "away"): Dot[] => {
-    const slots = FORMATIONS[team.formation].slots;
+    const slots = FORMATIONS[team.formation]!.slots;
     const attacking = possession === side;
     return team.players.map((player, i) => {
-      const slot = slots[i];
+      const slot = slots[i]!;
       let x = side === "home" ? slot.x : 100 - slot.x;
       let y = slot.y;
       const carrier = attacking && i === carrierIdx;

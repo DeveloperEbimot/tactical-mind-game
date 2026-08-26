@@ -43,7 +43,7 @@ function pickDefenderIndex(team: TeamState, chain: number) {
   if (pool.length === 0) return 3;
   const a = pool[Math.floor(Math.random() * pool.length)];
   const b = pool[Math.floor(Math.random() * pool.length)];
-  return a.p.stamina >= b.p.stamina ? a.i : b.i;
+  return a!.p.stamina >= b!.p.stamina ? a!.i : b!.i;
 }
 
 function nextReceiver(team: TeamState, carrierIdx: number) {
@@ -55,7 +55,7 @@ function nextReceiver(team: TeamState, carrierIdx: number) {
       y.p.ratings.pace + y.p.stamina * 0.3 - (x.p.ratings.pace + x.p.stamina * 0.3),
   );
   const top = options.slice(0, 4);
-  return top[Math.floor(Math.random() * top.length)].i;
+  return top[Math.floor(Math.random() * top.length)]!.i;
 }
 
 export interface MatchState {
@@ -138,7 +138,7 @@ export function useMatch() {
   const scoreGoal = (s: MatchState): MatchState => {
     const scorerSide = s.possession;
     const team = scorerSide === "home" ? s.home : s.away;
-    const scorer = team.players[s.carrierIdx];
+    const scorer = team.players[s.carrierIdx]!;
     let next: MatchState = {
       ...s,
       home: scorerSide === "home" ? { ...s.home, score: s.home.score + 1 } : s.home,
@@ -179,7 +179,7 @@ export function useMatch() {
           pendingAction: action,
           defenderIdx: defIdx,
           phase: "shot-aim",
-          lastChance: shotChance(s.home.players[s.carrierIdx], s.progress, s.home.activeTactic),
+          lastChance: shotChance(s.home.players[s.carrierIdx]!, s.progress, s.home.activeTactic),
           banner: null,
         };
       }
@@ -205,8 +205,8 @@ export function useMatch() {
   ): MatchState {
     const atkTeam = attackingSide === "home" ? s.home : s.away;
     const defTeam = attackingSide === "home" ? s.away : s.home;
-    const attacker = atkTeam.players[s.carrierIdx];
-    const defender = defTeam.players[defIdx];
+    const attacker = atkTeam.players[s.carrierIdx]!;
+    const defender = defTeam.players[defIdx]!;
     const res = resolveBattle({
       action,
       response,
@@ -265,7 +265,7 @@ export function useMatch() {
   const takeShot = useCallback((dir: ShotDir) => {
     setState((s) => {
       if (s.phase !== "shot-aim") return s;
-      const keeperDive = (["left", "centre", "right"] as ShotDir[])[Math.floor(Math.random() * 3)];
+      const keeperDive = (["left", "centre", "right"] as ShotDir[])[Math.floor(Math.random() * 3)]!;
       return resolveShot(s, dir, keeperDive, "home");
     });
   }, []);
@@ -286,8 +286,8 @@ export function useMatch() {
   ): MatchState {
     const atkTeam = attackingSide === "home" ? s.home : s.away;
     const defTeam = attackingSide === "home" ? s.away : s.home;
-    const shooter = atkTeam.players[s.carrierIdx];
-    const gk = defTeam.players[0];
+    const shooter = atkTeam.players[s.carrierIdx]!;
+    const gk = defTeam.players[0]!;
     const chance = s.lastChance ?? shotChance(shooter, s.progress, atkTeam.activeTactic);
     const roll = Math.random() * 100;
 
@@ -356,10 +356,10 @@ export function useMatch() {
       if (s.possession === HUMAN) {
         return { ...s, phase: "choose-action", banner: null };
       }
-      const carrier = s.away.players[s.carrierIdx];
+      const carrier = s.away.players[s.carrierIdx]!;
       const action = pickAiAction(s.progress, carrier);
       if (action === "shoot") {
-        const dir = (["left", "centre", "right"] as ShotDir[])[Math.floor(Math.random() * 3)];
+        const dir = (["left", "centre", "right"] as ShotDir[])[Math.floor(Math.random() * 3)]!;
         return {
           ...s,
           pendingShotDir: dir,
@@ -408,7 +408,7 @@ export function useMatch() {
           },
           minute: s.minute + 1,
         },
-        `Shape switched to ${formation} (${FORMATIONS[formation].blurb}).`,
+        `Shape switched to ${formation} (${FORMATIONS[formation]!.blurb}).`,
         "info",
       );
     });
@@ -438,12 +438,12 @@ export function useMatch() {
 
   const carrier: Player =
     state.possession === "home"
-      ? state.home.players[state.carrierIdx]
-      : state.away.players[state.carrierIdx];
+      ? state.home.players[state.carrierIdx]!
+      : state.away.players[state.carrierIdx]!;
   const defender: Player =
     state.possession === "home"
-      ? state.away.players[state.defenderIdx]
-      : state.home.players[state.defenderIdx];
+      ? state.away.players[state.defenderIdx]!
+      : state.home.players[state.defenderIdx]!;
 
   return {
     state,

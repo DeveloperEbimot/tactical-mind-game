@@ -208,8 +208,8 @@ function Game() {
                   onClick={() => chooseAction(a)}
                   className="rounded-md border border-border bg-secondary px-3 py-2 text-left transition-colors hover:border-accent hover:bg-accent hover:text-accent-foreground"
                 >
-                  <span className="block text-sm font-bold uppercase">{ACTION_INFO[a].name}</span>
-                  <span className="block text-[10px] opacity-80">{ACTION_INFO[a].vs}</span>
+                  <span className="block text-sm font-bold uppercase">{ACTION_INFO[a]!.name}</span>
+                  <span className="block text-[10px] opacity-80">{ACTION_INFO[a]!.vs}</span>
                 </button>
               ))}
             </div>
@@ -228,8 +228,8 @@ function Game() {
                   onClick={() => chooseResponse(r)}
                   className="rounded-md border border-border bg-secondary px-3 py-2 text-left transition-colors hover:border-destructive hover:bg-destructive hover:text-destructive-foreground"
                 >
-                  <span className="block text-sm font-bold uppercase">{RESPONSE_INFO[r].name}</span>
-                  <span className="block text-[10px] opacity-80">{RESPONSE_INFO[r].desc}</span>
+                  <span className="block text-sm font-bold uppercase">{RESPONSE_INFO[r]!.name}</span>
+                  <span className="block text-[10px] opacity-80">{RESPONSE_INFO[r]!.desc}</span>
                 </button>
               ))}
             </div>
@@ -265,7 +265,7 @@ function Game() {
         {s.phase === "shot-dive" && (
           <>
             <p className="mb-2 text-[11px] uppercase tracking-widest text-muted-foreground">
-              Shot incoming — {s.home.players[0].name} ({s.home.players[0].gkStyle}). Dive!
+              Shot incoming — {s.home.players[0]!.name} ({s.home.players[0]!.gkStyle}). Dive!
             </p>
             <div className="grid grid-cols-3 gap-2">
               {DIRS.map((d) => (
@@ -355,7 +355,7 @@ function Game() {
           <>
             <p className="mb-2 text-[11px] uppercase tracking-widest text-muted-foreground">
               Tactic cards left: {s.home.tacticsLeft}
-              {s.home.activeTactic ? ` · active: ${TACTIC_INFO[s.home.activeTactic].name}` : ""}
+              {s.home.activeTactic ? ` · active: ${TACTIC_INFO[s.home.activeTactic]!.name}` : ""}
             </p>
             <div className="grid grid-cols-2 gap-2">
               {TACTICS.map((t) => (
@@ -369,9 +369,9 @@ function Game() {
                       : "border-border bg-secondary hover:border-accent"
                   }`}
                 >
-                  <span className="block text-xs font-bold uppercase">{TACTIC_INFO[t].name}</span>
+                  <span className="block text-xs font-bold uppercase">{TACTIC_INFO[t]!.name}</span>
                   <span className="block text-[10px] text-muted-foreground">
-                    {TACTIC_INFO[t].desc}
+                    {TACTIC_INFO[t]!.desc}
                   </span>
                 </button>
               ))}
@@ -398,7 +398,7 @@ function Game() {
                 >
                   <span className="block text-sm font-bold">{f}</span>
                   <span className="block text-[10px] text-muted-foreground">
-                    {FORMATIONS[f].blurb}
+                    {FORMATIONS[f]!.blurb}
                   </span>
                 </button>
               ))}
