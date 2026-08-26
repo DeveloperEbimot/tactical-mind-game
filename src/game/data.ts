@@ -110,6 +110,20 @@ const AWAY_NAMES = [
   "Sonny Ferris",
 ];
 
+const HOME_BENCH_NAMES = [
+  "Gil Ashcombe",
+  "Ike Rothwell",
+  "Sammy Quill",
+  "Bruno Feldt",
+  "Ozzy Trenton",
+];
+const AWAY_BENCH_NAMES = [
+  "Hal Winstone",
+  "Freddie Mott",
+  "Ivo Carraway",
+  "Ned Balfour",
+  "Kit Osgood",
+];
 
 function rnd(min: number, max: number, seed: () => number) {
   return Math.round(min + seed() * (max - min));
@@ -188,6 +202,26 @@ export function buildSquad(
     ...(slot.role === "GK"
       ? { gkStyle: GK_STYLES[Math.floor(r() * GK_STYLES.length)]! }
       : {}),
+    stamina: 100,
+  }));
+}
+
+const BENCH_ROLES: Role[] = ["DEF", "MID", "MID", "ATT", "GK"];
+
+/** Five substitutes per team, seeded off the starting XI seed. */
+export function buildBench(side: "home" | "away", seed: number): Player[] {
+  const r = mulberry(seed + 991);
+  const names = side === "home" ? HOME_BENCH_NAMES : AWAY_BENCH_NAMES;
+  const club = side === "home" ? "Ballers FC" : "Rival United";
+  return BENCH_ROLES.map((role, i) => ({
+    id: `${side}-sub-${i}`,
+    name: names[i]!,
+    num: 12 + i,
+    role,
+    label: role === "GK" ? "GK" : role === "DEF" ? "CB" : role === "MID" ? "CM" : "ST",
+    club,
+    ratings: ratingsFor(role, r),
+    ...(role === "GK" ? { gkStyle: GK_STYLES[Math.floor(r() * GK_STYLES.length)]! } : {}),
     stamina: 100,
   }));
 }

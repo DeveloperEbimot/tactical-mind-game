@@ -66,6 +66,8 @@ export interface TeamState {
   short: string;
   formation: FormationName;
   players: Player[]; // 11, index 0 = GK
+  bench: Player[];
+  subsLeft: number;
   score: number;
   tacticsLeft: number;
   activeTactic: TacticCard | null;
