@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Pitch } from "@/components/Pitch";
 import { FORMATIONS, TACTIC_INFO } from "@/game/data";
 import { ACTION_INFO, RESPONSE_INFO } from "@/game/engine";
-import { useMatch, type ShotDir } from "@/game/useMatch";
+import { useMatch, type ShotDir, type PenDir, type DiveDir } from "@/game/useMatch";
 import type {
   AttackAction,
   DefenceResponse,
