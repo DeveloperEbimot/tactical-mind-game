@@ -62,14 +62,19 @@ function Game() {
     carrier,
     defender,
     chooseAction,
+    choosePassTarget,
+    cancelPass,
     chooseResponse,
     takeShot,
     diveShot,
+    takePenalty,
+    divePenalty,
     nextBeat,
     playTactic,
     changeFormation,
     restart,
   } = useMatch();
+
   const [panel, setPanel] = useState<"tactics" | "shape" | "log">("log");
   const s = state;
   const attackingHome = s.possession === "home";
