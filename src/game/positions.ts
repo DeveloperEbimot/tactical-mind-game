@@ -18,6 +18,7 @@ export function buildPositions(args: {
   ballX: number;
   ballY: number;
   progress: number;
+  carrierAnchor?: Pt | null;
 }): Pt[] {
   const slots = FORMATIONS[args.team.formation]!.slots;
   return args.team.players.map((p, i) => {
@@ -30,8 +31,9 @@ export function buildPositions(args: {
     }
 
     if (args.attacking && i === args.carrierIdx) {
-      x = args.ballX;
-      y = args.ballY;
+      // While the ball is in flight the carrier stays where he played it.
+      x = args.carrierAnchor ? args.carrierAnchor.x : args.ballX;
+      y = args.carrierAnchor ? args.carrierAnchor.y : args.ballY;
     } else if (!args.attacking && i === args.defenderIdx) {
       x = args.ballX + (args.side === "home" ? -4 : 4);
       y = args.ballY + (i % 2 === 0 ? -6 : 6);
