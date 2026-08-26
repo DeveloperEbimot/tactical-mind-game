@@ -279,6 +279,65 @@ function Game() {
           </>
         )}
 
+        {s.phase === "choose-pass-target" && (
+          <>
+            <p className="mb-2 text-[11px] uppercase tracking-widest text-muted-foreground">
+              Tap a flashing team-mate on the pitch — a defender in the lane will cut it out.
+            </p>
+            <button
+              onClick={cancelPass}
+              className="w-full rounded-md border border-border bg-secondary py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground"
+            >
+              Cancel pass
+            </button>
+          </>
+        )}
+
+        {s.phase === "animating" && (
+          <p className="py-2 text-[11px] uppercase tracking-widest text-muted-foreground">
+            Ball in play…
+          </p>
+        )}
+
+        {s.phase === "penalty-aim" && (
+          <>
+            <p className="mb-2 text-[11px] uppercase tracking-widest text-muted-foreground">
+              Penalty. Pick your finish — chip beats a diver, not a keeper who stands up.
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {(["left", "chip", "right"] as PenDir[]).map((d) => (
+                <button
+                  key={d}
+                  onClick={() => takePenalty(d)}
+                  className="rounded-md border border-border bg-secondary py-3 text-sm font-bold uppercase hover:border-accent hover:bg-accent hover:text-accent-foreground"
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {s.phase === "penalty-dive" && (
+          <>
+            <p className="mb-2 text-[11px] uppercase tracking-widest text-muted-foreground">
+              Penalty against you — {s.home.players[0]!.name}. Dive or stand up.
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {(["left", "stay", "right"] as DiveDir[]).map((d) => (
+                <button
+                  key={d}
+                  onClick={() => divePenalty(d)}
+                  className="rounded-md border border-border bg-secondary py-3 text-sm font-bold uppercase hover:border-accent hover:bg-accent hover:text-accent-foreground"
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+
         {s.phase === "resolve" && (
           <button
             onClick={nextBeat}
