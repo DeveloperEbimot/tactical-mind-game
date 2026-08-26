@@ -145,15 +145,8 @@ function Game() {
         </div>
       </div>
 
-      <Pitch
-        home={s.home}
-        away={s.away}
-        possession={s.possession}
-        carrierIdx={s.carrierIdx}
-        defenderIdx={s.defenderIdx}
-        progress={s.progress}
-        lane={s.lane}
-      />
+      <Pitch state={s} onPickTarget={choosePassTarget} />
+
 
       {/* Duel info */}
       <div className="mt-3 grid grid-cols-2 gap-2">
