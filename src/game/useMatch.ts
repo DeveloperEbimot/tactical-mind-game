@@ -311,6 +311,8 @@ export function useMatch() {
 
     if (cut) {
       const thief = defTeam.players[cut.idx]!;
+      const { from } = passOutcome(s0, attackingSide, targetIdx, response);
+      const legOne = flightTime(from, cut.point, 26, 380, 900);
       run([
         {
           delay: 0,
@@ -318,8 +320,9 @@ export function useMatch() {
             ...s,
             phase: "animating",
             passTargets: null,
+            carrierAnchor: from,
             ball: cut.point,
-            ballSpeed: 650,
+            ballSpeed: legOne,
             defenderIdx: cut.idx,
             pendingAction: null,
             pendingTarget: null,
@@ -327,14 +330,14 @@ export function useMatch() {
           }),
         },
         {
-          delay: 700,
+          delay: legOne + 120,
           patch: (s) => ({
             ...s,
             banner: `Cut out! ${thief.label} ${thief.name} steps in.`,
           }),
         },
         {
-          delay: 600,
+          delay: 700,
           patch: (s) =>
             turnover(
               push(s, `${passer.name}'s pass is intercepted by ${thief.name}.`, "info"),
@@ -346,6 +349,8 @@ export function useMatch() {
       return;
     }
 
+    const { from: origin } = passOutcome(s0, attackingSide, targetIdx, response);
+    const travel = flightTime(origin, to, 26, 420, 1000);
     run([
       {
         delay: 0,
@@ -353,15 +358,16 @@ export function useMatch() {
           ...s,
           phase: "animating",
           passTargets: null,
+          carrierAnchor: origin,
           ball: to,
-          ballSpeed: 650,
+          ballSpeed: travel,
           pendingAction: null,
           pendingTarget: null,
           banner: `${passer.name} → ${receiver.name}`,
         }),
       },
       {
-        delay: 720,
+        delay: travel + 140,
         patch: (s) => {
           const next: MatchState = {
             ...s,
