@@ -59,6 +59,11 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-pitch: var(--pitch);
+  --color-pitch-line: var(--pitch-line);
+  --color-chalk: var(--chalk);
+  --font-display: "Anton", "Arial Narrow", sans-serif;
+  --font-sans: "Barlow", ui-sans-serif, system-ui, sans-serif;
 }
 
 :root {
@@ -141,4 +146,75 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
   }
+}
+
+/* ── Ballers Shirts arcade-football theme ───────────────────────────── */
+:root {
+  --radius: 0.35rem;
+  --background: oklch(0.17 0.028 250);
+  --foreground: oklch(0.97 0.01 250);
+  --card: oklch(0.22 0.03 252);
+  --card-foreground: oklch(0.97 0.01 250);
+  --popover: oklch(0.22 0.03 252);
+  --popover-foreground: oklch(0.97 0.01 250);
+  --primary: oklch(0.86 0.21 128);
+  --primary-foreground: oklch(0.19 0.04 140);
+  --secondary: oklch(0.28 0.035 252);
+  --secondary-foreground: oklch(0.95 0.01 250);
+  --muted: oklch(0.26 0.03 252);
+  --muted-foreground: oklch(0.72 0.02 250);
+  --accent: oklch(0.86 0.21 128);
+  --accent-foreground: oklch(0.19 0.04 140);
+  --destructive: oklch(0.63 0.22 22);
+  --destructive-foreground: oklch(0.98 0.01 250);
+  --border: oklch(0.32 0.03 252);
+  --input: oklch(0.3 0.03 252);
+  --ring: oklch(0.86 0.21 128);
+  --pitch: oklch(0.42 0.09 148);
+  --pitch-line: oklch(0.52 0.09 148);
+  --chalk: oklch(0.97 0.02 140);
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    background-image: radial-gradient(
+      circle at 50% -10%,
+      oklch(0.28 0.05 150 / 0.5),
+      transparent 60%
+    );
+  }
+  h1, h2, .display {
+    font-family: var(--font-display);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+}
+
+@utility pitch {
+  background-color: var(--pitch);
+  background-image: repeating-linear-gradient(
+    90deg,
+    oklch(1 0 0 / 0.05) 0 8.33%,
+    transparent 8.33% 16.66%
+  );
+  box-shadow: inset 0 0 40px oklch(0 0 0 / 0.45);
+}
+
+@utility kit-home {
+  background: oklch(0.98 0.01 250);
+  color: oklch(0.2 0.03 250);
+  box-shadow: 0 1px 3px oklch(0 0 0 / 0.5);
+}
+
+@utility kit-away {
+  background: oklch(0.48 0.19 12);
+  color: oklch(0.98 0.01 250);
+  box-shadow: 0 1px 3px oklch(0 0 0 / 0.5);
+}
+
+@utility panel {
+  background: linear-gradient(oklch(0.24 0.03 252), oklch(0.2 0.03 252));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
 }
