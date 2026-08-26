@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { buildSquad, reshape, FORMATIONS } from "./data";
+import { buildSquad, buildBench, reshape, FORMATIONS } from "./data";
 import { gkSaveBonus, pickAiAction, pickAiResponse, shotChance } from "./engine";
 import { buildPositions, distToSegment, type Pt } from "./positions";
 import type {
@@ -28,10 +28,12 @@ function makeTeam(side: Side, formation: FormationName, seed: number): TeamState
     short: side === "home" ? "BAL" : "RIV",
     formation,
     players: buildSquad(side, formation, seed),
+    bench: buildBench(side, seed),
+    subsLeft: 5,
     score: 0,
-    tacticsLeft: 3,
+    tacticsLeft: Infinity,
     activeTactic: null,
-    formationChangesLeft: 2,
+    formationChangesLeft: Infinity,
   };
 }
 
@@ -868,11 +870,39 @@ export function useMatch() {
   };
 
   const playTactic = (tactic: TacticCard) => {
+    setState((s) =>
+      push(
+        {
+          ...s,
+          home: { ...s.home, activeTactic: s.home.activeTactic === tactic ? null : tactic },
+        },
+        s.home.activeTactic === tactic
+          ? `Tactic dropped: ${tactic.replace(/-/g, " ")}.`
+          : `Tactic played: ${tactic.replace(/-/g, " ")}.`,
+        "info",
+      ),
+    );
+  };
+
+  /** Swap a bench player onto the pitch, keeping the slot's role and label. */
+  const substitute = (onIdx: number, benchIdx: number) => {
     setState((s) => {
-      if (s.home.tacticsLeft <= 0) return s;
+      const team = s.home;
+      if (team.subsLeft <= 0) return s;
+      const off = team.players[onIdx];
+      const on = team.bench[benchIdx];
+      if (!off || !on) return s;
+      const slot = FORMATIONS[team.formation]!.slots[onIdx]!;
+      const players = team.players.map((p, i) =>
+        i === onIdx ? { ...on, role: slot.role, label: slot.label } : p,
+      );
+      const bench = team.bench.filter((_, i) => i !== benchIdx);
       return push(
-        { ...s, home: { ...s.home, tacticsLeft: s.home.tacticsLeft - 1, activeTactic: tactic } },
-        `Tactic played: ${tactic.replace(/-/g, " ")}.`,
+        {
+          ...s,
+          home: { ...team, players, bench, subsLeft: team.subsLeft - 1 },
+        },
+        `Sub: ${on.name} on for ${off.name}.`,
         "info",
       );
     });
@@ -880,7 +910,7 @@ export function useMatch() {
 
   const changeFormation = (formation: FormationName) => {
     setState((s) => {
-      if (s.home.formationChangesLeft <= 0 || s.home.formation === formation) return s;
+      if (s.home.formation === formation) return s;
       const players = reshape(s.home.players, formation);
       return push(
         {
@@ -889,9 +919,7 @@ export function useMatch() {
             ...s.home,
             formation,
             players,
-            formationChangesLeft: s.home.formationChangesLeft - 1,
           },
-          minute: s.minute + 1,
         },
         `Shape switched to ${formation} (${FORMATIONS[formation]!.blurb}).`,
         "info",
@@ -931,6 +959,7 @@ export function useMatch() {
     divePenalty,
     nextBeat,
     playTactic,
+    substitute,
     changeFormation,
     restart,
   };
