@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Pitch } from "@/components/Pitch";
 import { FORMATIONS, TACTIC_INFO } from "@/game/data";
 import { ACTION_INFO, RESPONSE_INFO } from "@/game/engine";
-import { useMatch, type ShotDir } from "@/game/useMatch";
+import { useMatch, type ShotDir, type PenDir, type DiveDir } from "@/game/useMatch";
 import type {
   AttackAction,
   DefenceResponse,
@@ -62,14 +62,19 @@ function Game() {
     carrier,
     defender,
     chooseAction,
+    choosePassTarget,
+    cancelPass,
     chooseResponse,
     takeShot,
     diveShot,
+    takePenalty,
+    divePenalty,
     nextBeat,
     playTactic,
     changeFormation,
     restart,
   } = useMatch();
+
   const [panel, setPanel] = useState<"tactics" | "shape" | "log">("log");
   const s = state;
   const attackingHome = s.possession === "home";
@@ -140,15 +145,8 @@ function Game() {
         </div>
       </div>
 
-      <Pitch
-        home={s.home}
-        away={s.away}
-        possession={s.possession}
-        carrierIdx={s.carrierIdx}
-        defenderIdx={s.defenderIdx}
-        progress={s.progress}
-        lane={s.lane}
-      />
+      <Pitch state={s} onPickTarget={choosePassTarget} />
+
 
       {/* Duel info */}
       <div className="mt-3 grid grid-cols-2 gap-2">
@@ -280,6 +278,65 @@ function Game() {
             </div>
           </>
         )}
+
+        {s.phase === "choose-pass-target" && (
+          <>
+            <p className="mb-2 text-[11px] uppercase tracking-widest text-muted-foreground">
+              Tap a flashing team-mate on the pitch — a defender in the lane will cut it out.
+            </p>
+            <button
+              onClick={cancelPass}
+              className="w-full rounded-md border border-border bg-secondary py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground"
+            >
+              Cancel pass
+            </button>
+          </>
+        )}
+
+        {s.phase === "animating" && (
+          <p className="py-2 text-[11px] uppercase tracking-widest text-muted-foreground">
+            Ball in play…
+          </p>
+        )}
+
+        {s.phase === "penalty-aim" && (
+          <>
+            <p className="mb-2 text-[11px] uppercase tracking-widest text-muted-foreground">
+              Penalty. Pick your finish — chip beats a diver, not a keeper who stands up.
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {(["left", "chip", "right"] as PenDir[]).map((d) => (
+                <button
+                  key={d}
+                  onClick={() => takePenalty(d)}
+                  className="rounded-md border border-border bg-secondary py-3 text-sm font-bold uppercase hover:border-accent hover:bg-accent hover:text-accent-foreground"
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {s.phase === "penalty-dive" && (
+          <>
+            <p className="mb-2 text-[11px] uppercase tracking-widest text-muted-foreground">
+              Penalty against you — {s.home.players[0]!.name}. Dive or stand up.
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {(["left", "stay", "right"] as DiveDir[]).map((d) => (
+                <button
+                  key={d}
+                  onClick={() => divePenalty(d)}
+                  className="rounded-md border border-border bg-secondary py-3 text-sm font-bold uppercase hover:border-accent hover:bg-accent hover:text-accent-foreground"
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
 
         {s.phase === "resolve" && (
           <button

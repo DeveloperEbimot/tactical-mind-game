@@ -75,11 +75,16 @@ export interface TeamState {
 export type Phase =
   | "kickoff"
   | "choose-action"
+  | "choose-pass-target"
   | "choose-response"
   | "shot-aim"
   | "shot-dive"
+  | "penalty-aim"
+  | "penalty-dive"
+  | "animating"
   | "resolve"
   | "fulltime";
+
 
 export interface LogEntry {
   id: number;

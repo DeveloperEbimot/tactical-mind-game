@@ -84,31 +84,32 @@ export const FORMATIONS: Record<FormationName, Formation> = {
 };
 
 const HOME_NAMES = [
-  "Mabaso",
-  "Khoza",
-  "Petersen",
-  "Duarte",
-  "Vermeer",
-  "Ncube",
-  "Adeyemi",
-  "Rossi",
-  "Sekhukhune",
-  "Larsen",
-  "Okafor",
+  "John Jaques",
+  "Elton Praise",
+  "Corbin Weeks",
+  "Marlo Denning",
+  "Otis Vandermeer",
+  "Rudy Salcombe",
+  "Jackson Maynor",
+  "Teddy Ravenhill",
+  "Nico Brambell",
+  "Wes Harlowe",
+  "Dex Fontaine",
 ];
 const AWAY_NAMES = [
-  "Grimaldo",
-  "Nakamura",
-  "Bello",
-  "Kovac",
-  "Silva",
-  "Marchand",
-  "Haugen",
-  "Dlamini",
-  "Ferreira",
-  "Yildiz",
-  "Broek",
+  "Gus Merrivale",
+  "Lonnie Barkfield",
+  "Percy Stallard",
+  "Abel Crowhurst",
+  "Milo Sandgrove",
+  "Ronan Pike",
+  "Vance Ottoway",
+  "Casper Lund",
+  "Emmet Doyle",
+  "Rex Callahan",
+  "Sonny Ferris",
 ];
+
 
 function rnd(min: number, max: number, seed: () => number) {
   return Math.round(min + seed() * (max - min));
