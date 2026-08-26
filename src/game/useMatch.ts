@@ -415,7 +415,8 @@ export function useMatch() {
       phase: "animating",
       defenderIdx: defIdx,
       pendingAction: null,
-      ballSpeed: 600,
+      ballSpeed: 900,
+      carrierAnchor: null,
       ball: { x: clamp(s.ball.x + dir * gain * 0.6, 3, 97), y: clamp(s.ball.y + (Math.random() - 0.5) * 8, 8, 92) },
       banner: `${attacker.name} ${action === "sprint" ? "sprints at" : "takes on"} ${defender.name} — ${response}!`,
     });
@@ -424,7 +425,7 @@ export function useMatch() {
       run([
         { delay: 0, patch: advanceBall },
         {
-          delay: 650,
+          delay: 950,
           patch: (s) => {
             const progress = clamp(s0.progress + gain, 5, 95);
             const next: MatchState = {
@@ -461,7 +462,7 @@ export function useMatch() {
       run([
         { delay: 0, patch: advanceBall },
         {
-          delay: 650,
+          delay: 950,
           patch: (s) => ({
             ...s,
             banner: inBox
@@ -512,7 +513,7 @@ export function useMatch() {
     run([
       { delay: 0, patch: advanceBall },
       {
-        delay: 650,
+        delay: 950,
         patch: (s) => ({ ...s, banner: `${defender.name} wins it cleanly!` }),
       },
       {
@@ -544,7 +545,8 @@ export function useMatch() {
       phase: "animating",
       pendingShotDir: null,
       pendingAction: null,
-      ballSpeed: 450,
+      ballSpeed: 620,
+      carrierAnchor: null,
       ball: { x: goalX, y: targetY },
       banner: `${shooter.name} shoots ${shotDir}! (${chance}%)`,
     });
@@ -553,7 +555,7 @@ export function useMatch() {
       if (Math.random() < 0.5) {
         run([
           { delay: 0, patch: (s) => ({ ...strike(s), ball: { x: goalX, y: shotDir === "left" ? 14 : 86 } }) },
-          { delay: 500, patch: (s) => ({ ...s, banner: `Wide! ${shooter.name} drags it off target.` }) },
+          { delay: 680, patch: (s) => ({ ...s, banner: `Wide! ${shooter.name} drags it off target.` }) },
           {
             delay: 600,
             patch: (s) =>
@@ -566,10 +568,12 @@ export function useMatch() {
       run([
         { delay: 0, patch: strike },
         {
-          delay: 450,
+          delay: 620,
           patch: (s) => ({
             ...s,
-            ball: { x: s.ball.x - (attackingSide === "home" ? 8 : -8), y: clamp(targetY + 10, 8, 92) },
+            ballSpeed: 520,
+            carrierAnchor: { x: s.progress > 50 ? s.ball.x - (attackingSide === "home" ? 10 : -10) : s.ball.x, y: s.lane },
+            ball: { x: s.ball.x - (attackingSide === "home" ? 12 : -12), y: clamp(targetY + 12, 8, 92) },
             banner: "Blocked! It deflects off a defender…",
           }),
         },
@@ -604,7 +608,7 @@ export function useMatch() {
     run([
       { delay: 0, patch: strike },
       {
-        delay: 480,
+        delay: 640,
         patch: (s) => ({
           ...s,
           banner: saved
@@ -654,12 +658,13 @@ export function useMatch() {
           progress: 88,
           pendingPen: null,
           ball: { x: goalX, y: missed ? (shot === "left" ? 12 : 88) : targetY },
-          ballSpeed: 450,
+          ballSpeed: 600,
+          carrierAnchor: null,
           banner: `${shooter.name} goes ${shot} — ${gk.name} ${dive === "stay" ? "stands up" : `dives ${dive}`}!`,
         }),
       },
       {
-        delay: 520,
+        delay: 640,
         patch: (s) => ({
           ...s,
           banner: saved ? "SAVED!" : missed ? "Off the frame — missed!" : "GOAL!",
@@ -717,6 +722,58 @@ export function useMatch() {
     }
     const response = pickAiResponse(action);
     resolveRun(s, action, response, pickDefenderIndex(s.away, s.chain), "home");
+  }, []);
+
+  const kickOff = useCallback(() => {
+    const s = ref.current;
+    if (s.phase !== "kickoff") return;
+    const team = s.possession === "home" ? s.home : s.away;
+    const mids = team.players
+      .map((p, i) => ({ p, i }))
+      .filter(({ p }) => p.role === "MID" || p.role === "ATT");
+    const receiver = mids[Math.floor(Math.random() * mids.length)] ?? { i: 6, p: team.players[6]! };
+    const slots = FORMATIONS[team.formation]!.slots[receiver.i]!;
+    const to: Pt = {
+      x: s.possession === "home" ? slots.x : 100 - slots.x,
+      y: slots.y,
+    };
+    const travel = flightTime({ x: 50, y: 50 }, to, 24, 500, 1000);
+    run([
+      {
+        delay: 0,
+        patch: (prev) => ({
+          ...prev,
+          phase: "animating",
+          carrierAnchor: { x: 50, y: 50 },
+          ball: to,
+          ballSpeed: travel,
+          banner: `Kick off — rolled to ${receiver.p.name}.`,
+        }),
+      },
+      {
+        delay: travel + 150,
+        patch: (prev) => {
+          const next: MatchState = {
+            ...prev,
+            carrierIdx: receiver.i,
+            progress: progressFromX(prev.possession, to.x),
+            lane: to.y,
+            chain: 0,
+            phase: prev.possession === HUMAN ? "choose-action" : "resolve",
+            banner: prev.possession === HUMAN ? null : "They have it — brace yourself.",
+          };
+          return settle(push(next, `Kick off. ${receiver.p.name} takes possession.`, "info"));
+        },
+      },
+    ]);
+  }, [run]);
+
+  const cancelShot = useCallback(() => {
+    setState((s) =>
+      s.phase === "shot-aim"
+        ? { ...s, phase: "choose-action", pendingAction: null, lastChance: null, banner: null }
+        : s,
+    );
   }, []);
 
   const choosePassTarget = useCallback((idx: number) => {
@@ -863,6 +920,8 @@ export function useMatch() {
     carrier,
     defender,
     chooseAction,
+    kickOff,
+    cancelShot,
     choosePassTarget,
     cancelPass,
     chooseResponse,
