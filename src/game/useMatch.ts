@@ -57,6 +57,8 @@ export interface MatchState {
   banner: string | null;
   ball: Pt;
   ballSpeed: number;
+  /** While the ball is in flight the carrier stays put here instead of riding the ball. */
+  carrierAnchor: Pt | null;
   passTargets: number[] | null;
 }
 
@@ -87,6 +89,11 @@ function ballAtRest(s: {
   return { x: s.possession === "home" ? s.progress : 100 - s.progress, y: s.lane };
 }
 
+/** Travel time so short passes feel snappy and long balls actually hang. */
+function flightTime(from: Pt, to: Pt, perUnit = 22, lo = 420, hi = 1100) {
+  return clamp(Math.round(Math.hypot(to.x - from.x, to.y - from.y) * perUnit), lo, hi);
+}
+
 export function positionsFor(s: MatchState) {
   const home = buildPositions({
     team: s.home,
@@ -97,6 +104,7 @@ export function positionsFor(s: MatchState) {
     ballX: s.ball.x,
     ballY: s.ball.y,
     progress: s.progress,
+    carrierAnchor: s.carrierAnchor,
   });
   const away = buildPositions({
     team: s.away,
@@ -107,6 +115,7 @@ export function positionsFor(s: MatchState) {
     ballX: s.ball.x,
     ballY: s.ball.y,
     progress: s.progress,
+    carrierAnchor: s.carrierAnchor,
   });
   return { home, away };
 }
@@ -134,21 +143,22 @@ function initial(seedA: number, seedB: number): MatchState {
     progress: 46,
     lane: 50,
     chain: 0,
-    phase: "choose-action" as Phase,
+    phase: "kickoff" as Phase,
     minute: 1,
     momentum: 0,
-    log: [{ id: 0, kind: "info" as const, text: "Kick off. Ballers FC get the ball." }],
+    log: [{ id: 0, kind: "info" as const, text: "Teams are out. Tap Kick off." }],
     pendingAction: null,
     pendingTarget: null,
     pendingShotDir: null,
     pendingPen: null,
     penaltyFor: null,
     lastChance: null,
-    banner: null,
+    banner: "Kick off — get it rolling.",
     ballSpeed: 500,
+    carrierAnchor: null,
     passTargets: null,
   };
-  return { ...base, ball: ballAtRest(base) };
+  return { ...base, ball: { x: 50, y: 50 } };
 }
 
 export function useMatch() {
@@ -199,8 +209,9 @@ export function useMatch() {
   const settle = (s: MatchState): MatchState => ({
     ...s,
     ball: ballAtRest(s),
+    carrierAnchor: null,
     passTargets: null,
-    ballSpeed: 500,
+    ballSpeed: 520,
   });
 
   function turnover(s: MatchState, reason: string, newCarrier?: number): MatchState {
