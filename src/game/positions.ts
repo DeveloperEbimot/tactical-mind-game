@@ -38,8 +38,11 @@ export function buildPositions(args: {
       x = args.ballX + (args.side === "home" ? -4 : 4);
       y = args.ballY + (i % 2 === 0 ? -6 : 6);
     } else if (args.attacking) {
-      const shift = (args.progress - 46) * 0.3;
-      x = args.side === "home" ? slot.x + shift : 100 - slot.x - shift;
+      // Push up with the attack, but everyone keeps their line's discipline.
+      const shift = Math.max(0, (args.progress - 46) * 0.22);
+      const cap = p.role === "DEF" ? 45 : p.role === "MID" ? 62 : 82;
+      const pushed = Math.min(slot.x + shift, cap);
+      x = args.side === "home" ? pushed : 100 - pushed;
     } else {
       // Defending shape drops towards its own goal as the attack gets deeper.
       const drop = Math.max(0, (args.progress - 46) * 0.16);
@@ -51,6 +54,7 @@ export function buildPositions(args: {
     }
 
     return { x: clamp(x, 3, 97), y: clamp(y, 6, 94) };
+
   });
 }
 
