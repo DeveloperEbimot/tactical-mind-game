@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { buildSquad, reshape, FORMATIONS } from "./data";
 import { gkSaveBonus, pickAiAction, pickAiResponse, shotChance } from "./engine";
 import { buildPositions, distToSegment, type Pt } from "./positions";
@@ -173,7 +173,7 @@ export function useMatch() {
 
   type Step = { delay: number; patch: (s: MatchState) => MatchState };
 
-  const run = useCallback((steps: Step[]) => {
+  const run = (steps: Step[]) => {
     timers.current.forEach((t) => clearTimeout(t));
     timers.current = [];
     let t = 0;
@@ -187,7 +187,7 @@ export function useMatch() {
         );
       }
     }
-  }, []);
+  };
 
   const push = (s: MatchState, text: string, kind: LogEntry["kind"] = "info"): MatchState => ({
     ...s,
@@ -692,7 +692,7 @@ export function useMatch() {
 
   // ---------------- human inputs ----------------
 
-  const chooseAction = useCallback((action: AttackAction) => {
+  const chooseAction = (action: AttackAction) => {
     const s = ref.current;
     if (s.phase !== "choose-action" || s.possession !== HUMAN) return;
     if (action === "pass") {
@@ -722,9 +722,9 @@ export function useMatch() {
     }
     const response = pickAiResponse(action);
     resolveRun(s, action, response, pickDefenderIndex(s.away, s.chain), "home");
-  }, []);
+  };
 
-  const kickOff = useCallback(() => {
+  const kickOff = () => {
     const s = ref.current;
     if (s.phase !== "kickoff") return;
     const team = s.possession === "home" ? s.home : s.away;
@@ -766,31 +766,31 @@ export function useMatch() {
         },
       },
     ]);
-  }, [run]);
+  };
 
-  const cancelShot = useCallback(() => {
+  const cancelShot = () => {
     setState((s) =>
       s.phase === "shot-aim"
         ? { ...s, phase: "choose-action", pendingAction: null, lastChance: null, banner: null }
         : s,
     );
-  }, []);
+  };
 
-  const choosePassTarget = useCallback((idx: number) => {
+  const choosePassTarget = (idx: number) => {
     const s = ref.current;
     if (s.phase !== "choose-pass-target" || !s.passTargets?.includes(idx)) return;
     resolvePass(s, "home", idx, pickAiResponse("pass"));
-  }, []);
+  };
 
-  const cancelPass = useCallback(() => {
+  const cancelPass = () => {
     setState((s) =>
       s.phase === "choose-pass-target"
         ? { ...s, phase: "choose-action", passTargets: null, pendingAction: null, banner: null }
         : s,
     );
-  }, []);
+  };
 
-  const chooseResponse = useCallback((response: DefenceResponse) => {
+  const chooseResponse = (response: DefenceResponse) => {
     const s = ref.current;
     if (s.phase !== "choose-response" || !s.pendingAction) return;
     if (s.pendingAction === "pass") {
@@ -798,35 +798,35 @@ export function useMatch() {
       return;
     }
     resolveRun(s, s.pendingAction as "dribble" | "sprint", response, s.defenderIdx, "away");
-  }, []);
+  };
 
-  const takeShot = useCallback((dir: ShotDir) => {
+  const takeShot = (dir: ShotDir) => {
     const s = ref.current;
     if (s.phase !== "shot-aim") return;
     const keeperDive = (["left", "centre", "right"] as ShotDir[])[Math.floor(Math.random() * 3)]!;
     resolveShot(s, dir, keeperDive, "home");
-  }, []);
+  };
 
-  const diveShot = useCallback((dir: ShotDir) => {
+  const diveShot = (dir: ShotDir) => {
     const s = ref.current;
     if (s.phase !== "shot-dive" || !s.pendingShotDir) return;
     resolveShot(s, s.pendingShotDir, dir, "away");
-  }, []);
+  };
 
-  const takePenalty = useCallback((dir: PenDir) => {
+  const takePenalty = (dir: PenDir) => {
     const s = ref.current;
     if (s.phase !== "penalty-aim") return;
     const dive = (["left", "right", "stay"] as DiveDir[])[Math.floor(Math.random() * 3)]!;
     resolvePenalty(s, dir, dive, "home");
-  }, []);
+  };
 
-  const divePenalty = useCallback((dir: DiveDir) => {
+  const divePenalty = (dir: DiveDir) => {
     const s = ref.current;
     if (s.phase !== "penalty-dive" || !s.pendingPen) return;
     resolvePenalty(s, s.pendingPen, dir, "away");
-  }, []);
+  };
 
-  const nextBeat = useCallback(() => {
+  const nextBeat = () => {
     const s = ref.current;
     if (s.phase === "fulltime") return;
     if (s.possession === HUMAN) {
@@ -865,9 +865,9 @@ export function useMatch() {
       phase: "choose-response",
       banner: `${carrier.name} is on the ball — read him.`,
     }));
-  }, []);
+  };
 
-  const playTactic = useCallback((tactic: TacticCard) => {
+  const playTactic = (tactic: TacticCard) => {
     setState((s) => {
       if (s.home.tacticsLeft <= 0) return s;
       return push(
@@ -876,9 +876,9 @@ export function useMatch() {
         "info",
       );
     });
-  }, []);
+  };
 
-  const changeFormation = useCallback((formation: FormationName) => {
+  const changeFormation = (formation: FormationName) => {
     setState((s) => {
       if (s.home.formationChangesLeft <= 0 || s.home.formation === formation) return s;
       const players = reshape(s.home.players, formation);
@@ -897,14 +897,14 @@ export function useMatch() {
         "info",
       );
     });
-  }, []);
+  };
 
-  const restart = useCallback(() => {
+  const restart = () => {
     logId.current = 0;
     timers.current.forEach((t) => clearTimeout(t));
     timers.current = [];
     setState(initial(Math.floor(Math.random() * 9999), Math.floor(Math.random() * 9999)));
-  }, []);
+  };
 
   const carrier: Player =
     state.possession === "home"
