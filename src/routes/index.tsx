@@ -62,6 +62,8 @@ function Game() {
     carrier,
     defender,
     chooseAction,
+    kickOff,
+    cancelShot,
     choosePassTarget,
     cancelPass,
     chooseResponse,
@@ -71,11 +73,13 @@ function Game() {
     divePenalty,
     nextBeat,
     playTactic,
+    substitute,
     changeFormation,
     restart,
   } = useMatch();
 
-  const [panel, setPanel] = useState<"tactics" | "shape" | "log">("log");
+  const [panel, setPanel] = useState<"tactics" | "shape" | "subs" | "log">("log");
+  const [subOff, setSubOff] = useState<number | null>(null);
   const s = state;
   const attackingHome = s.possession === "home";
 
@@ -194,6 +198,15 @@ function Game() {
           </p>
         )}
 
+        {s.phase === "kickoff" && (
+          <button
+            onClick={kickOff}
+            className="w-full rounded-md bg-primary py-3 text-sm font-bold uppercase tracking-widest text-primary-foreground"
+          >
+            Kick off
+          </button>
+        )}
+
         {s.phase === "choose-action" && (
           <>
             <p className="mb-2 text-[11px] uppercase tracking-widest text-muted-foreground">
@@ -257,6 +270,12 @@ function Game() {
                 </button>
               ))}
             </div>
+            <button
+              onClick={cancelShot}
+              className="mt-2 w-full rounded-md border border-border bg-secondary py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground"
+            >
+              Cancel shot
+            </button>
           </>
         )}
 
@@ -371,7 +390,7 @@ function Game() {
 
       {/* Tabs */}
       <div className="mt-4 flex gap-2">
-        {(["log", "tactics", "shape"] as const).map((t) => (
+        {(["log", "tactics", "shape", "subs"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setPanel(t)}
@@ -411,14 +430,13 @@ function Game() {
         {panel === "tactics" && (
           <>
             <p className="mb-2 text-[11px] uppercase tracking-widest text-muted-foreground">
-              Tactic cards left: {s.home.tacticsLeft}
+              Unlimited tactic cards · tap to toggle
               {s.home.activeTactic ? ` · active: ${TACTIC_INFO[s.home.activeTactic]!.name}` : ""}
             </p>
             <div className="grid grid-cols-2 gap-2">
               {TACTICS.map((t) => (
                 <button
                   key={t}
-                  disabled={s.home.tacticsLeft <= 0}
                   onClick={() => playTactic(t)}
                   className={`rounded-md border px-3 py-2 text-left disabled:opacity-40 ${
                     s.home.activeTactic === t
@@ -439,13 +457,12 @@ function Game() {
         {panel === "shape" && (
           <>
             <p className="mb-2 text-[11px] uppercase tracking-widest text-muted-foreground">
-              Formation switches left: {s.home.formationChangesLeft} (costs a minute)
+              Switch shape as often as you like
             </p>
             <div className="grid grid-cols-2 gap-2">
               {(Object.keys(FORMATIONS) as FormationName[]).map((f) => (
                 <button
                   key={f}
-                  disabled={s.home.formationChangesLeft <= 0}
                   onClick={() => changeFormation(f)}
                   className={`rounded-md border px-3 py-2 text-left disabled:opacity-40 ${
                     s.home.formation === f
@@ -459,6 +476,71 @@ function Game() {
                   </span>
                 </button>
               ))}
+            </div>
+          </>
+        )}
+        {panel === "subs" && (
+          <>
+            <p className="mb-2 text-[11px] uppercase tracking-widest text-muted-foreground">
+              Substitutions left: {s.home.subsLeft}
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="mb-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+                  On the pitch
+                </p>
+                <ul className="max-h-56 space-y-1 overflow-y-auto">
+                  {s.home.players.map((p, i) => (
+                    <li key={p.id}>
+                      <button
+                        onClick={() => setSubOff(subOff === i ? null : i)}
+                        className={`w-full rounded-md border px-2 py-1.5 text-left text-[11px] ${
+                          subOff === i
+                            ? "border-accent bg-accent/10"
+                            : "border-border bg-secondary"
+                        }`}
+                      >
+                        <span className="font-bold">
+                          {p.label} {p.name}
+                        </span>
+                        <span className="block text-[10px] text-muted-foreground">
+                          STA {Math.round(p.stamina)}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <p className="mb-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+                  Bench {subOff === null ? "(pick a player first)" : "(tap to bring on)"}
+                </p>
+                <ul className="max-h-56 space-y-1 overflow-y-auto">
+                  {s.home.bench.length === 0 && (
+                    <li className="text-[11px] text-muted-foreground">Bench is empty.</li>
+                  )}
+                  {s.home.bench.map((p, i) => (
+                    <li key={p.id}>
+                      <button
+                        disabled={subOff === null || s.home.subsLeft <= 0}
+                        onClick={() => {
+                          if (subOff === null) return;
+                          substitute(subOff, i);
+                          setSubOff(null);
+                        }}
+                        className="w-full rounded-md border border-border bg-secondary px-2 py-1.5 text-left text-[11px] disabled:opacity-40"
+                      >
+                        <span className="font-bold">
+                          {p.label} {p.name}
+                        </span>
+                        <span className="block text-[10px] text-muted-foreground">
+                          PAC {p.ratings.pace} · STA {Math.round(p.stamina)}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </>
         )}
