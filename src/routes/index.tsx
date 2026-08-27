@@ -73,6 +73,7 @@ function Game() {
     divePenalty,
     nextBeat,
     playTactic,
+    setMentality,
     substitute,
     changeFormation,
     restart,
@@ -456,6 +457,33 @@ function Game() {
 
         {panel === "shape" && (
           <>
+            <p className="mb-2 text-[11px] uppercase tracking-widest text-muted-foreground">
+              Mentality
+            </p>
+            <div className="mb-4 grid grid-cols-3 gap-2">
+              {(
+                [
+                  { key: "attack", label: "Attack", blurb: "Everyone pushes into their half" },
+                  { key: "balanced", label: "Balanced", blurb: "Keep the shape" },
+                  { key: "defend", label: "Defend", blurb: "All eleven drop back" },
+                ] as const
+              ).map((m) => (
+                <button
+                  key={m.key}
+                  onClick={() => setMentality(m.key)}
+                  className={`rounded-md border px-2 py-2 text-left ${
+                    s.home.mentality === m.key
+                      ? "border-accent bg-accent/10"
+                      : "border-border bg-secondary hover:border-accent"
+                  }`}
+                >
+                  <span className="block text-sm font-bold">{m.label}</span>
+                  <span className="block text-[10px] leading-tight text-muted-foreground">
+                    {m.blurb}
+                  </span>
+                </button>
+              ))}
+            </div>
             <p className="mb-2 text-[11px] uppercase tracking-widest text-muted-foreground">
               Switch shape as often as you like
             </p>
