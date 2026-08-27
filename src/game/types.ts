@@ -60,11 +60,14 @@ export type TacticCard =
 
 export type Side = "home" | "away";
 
+export type Mentality = "attack" | "balanced" | "defend";
+
 export interface TeamState {
   side: Side;
   name: string;
   short: string;
   formation: FormationName;
+  mentality: Mentality;
   players: Player[]; // 11, index 0 = GK
   bench: Player[];
   subsLeft: number;
