@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { buildSquad, buildBench, reshape, FORMATIONS } from "./data";
 import { gkSaveBonus, pickAiAction, pickAiResponse, shotChance } from "./engine";
-import { buildPositions, distToSegment, type Pt } from "./positions";
+import { buildPositions, distToSegment, nearestOpponent, type Pt } from "./positions";
 import type {
   AttackAction,
   DefenceResponse,
   FormationName,
   LogEntry,
+  Mentality,
   Phase,
   Player,
   Side,
@@ -27,6 +28,7 @@ function makeTeam(side: Side, formation: FormationName, seed: number): TeamState
     name: side === "home" ? "Ballers FC" : "Rival United",
     short: side === "home" ? "BAL" : "RIV",
     formation,
+    mentality: "balanced",
     players: buildSquad(side, formation, seed),
     bench: buildBench(side, seed),
     subsLeft: 5,
@@ -96,6 +98,9 @@ function flightTime(from: Pt, to: Pt, perUnit = 22, lo = 420, hi = 1100) {
   return clamp(Math.round(Math.hypot(to.x - from.x, to.y - from.y) * perUnit), lo, hi);
 }
 
+/** Only an opponent this close (in pitch %) may contest the ball. */
+export const CONTEST_RADIUS = 14;
+
 export function positionsFor(s: MatchState) {
   const home = buildPositions({
     team: s.home,
@@ -122,13 +127,14 @@ export function positionsFor(s: MatchState) {
   return { home, away };
 }
 
-function pickDefenderIndex(team: TeamState, chain: number) {
-  const wanted = chain <= 0 ? ["ATT", "MID"] : chain === 1 ? ["MID", "DEF"] : ["DEF"];
-  const pool = team.players
-    .map((p, i) => ({ p, i }))
-    .filter(({ p }) => wanted.includes(p.role) && p.stamina > 5);
-  if (pool.length === 0) return 3;
-  return pool[Math.floor(Math.random() * pool.length)]!.i;
+/** Nearest defending outfielder to the ball, and whether he is close enough to duel. */
+export function contestFor(s: MatchState) {
+  const pos = positionsFor(s);
+  const defSide: Side = s.possession === "home" ? "away" : "home";
+  const defPos = defSide === "home" ? pos.home : pos.away;
+  const defTeam = defSide === "home" ? s.home : s.away;
+  const near = nearestOpponent(defPos, defTeam.players, s.ball);
+  return { idx: near.idx, dist: near.dist, contested: near.dist <= CONTEST_RADIUS };
 }
 
 function progressFromX(side: Side, x: number) {
