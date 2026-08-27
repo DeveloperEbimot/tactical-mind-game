@@ -79,7 +79,7 @@ export function Pitch({ state: s, onPickTarget }: Props) {
         style={{
           left: `${s.ball.x}%`,
           top: `${s.ball.y}%`,
-          transition: `left ${s.ballSpeed}ms ease-out, top ${s.ballSpeed}ms ease-out`,
+          transition: `left ${s.ballSpeed}ms cubic-bezier(0.2, 0.6, 0.25, 1), top ${s.ballSpeed}ms cubic-bezier(0.2, 0.6, 0.25, 1)`,
         }}
       />
     </div>
