@@ -214,13 +214,17 @@ export function useMatch() {
       ? push({ ...s, phase: "fulltime", banner: "Full time" }, "Full time.", "info")
       : s;
 
-  const settle = (s: MatchState): MatchState => ({
-    ...s,
-    ball: ballAtRest(s),
-    carrierAnchor: null,
-    passTargets: null,
-    ballSpeed: 520,
-  });
+  const settle = (s: MatchState): MatchState => {
+    const base: MatchState = {
+      ...s,
+      ball: ballAtRest(s),
+      carrierAnchor: null,
+      passTargets: null,
+      ballSpeed: 520,
+    };
+    // Whoever is actually closest to the ball becomes the marker — nobody flies across the pitch.
+    return { ...base, defenderIdx: contestFor(base).idx };
+  };
 
   function turnover(s: MatchState, reason: string, newCarrier?: number): MatchState {
     const newSide: Side = s.possession === "home" ? "away" : "home";
@@ -231,7 +235,6 @@ export function useMatch() {
       ...s,
       possession: newSide,
       carrierIdx: carrier,
-      defenderIdx: pickDefenderIndex(newSide === "home" ? s.away : s.home, 0),
       chain: 0,
       progress: 42,
       lane: clamp(s.lane, 20, 80),
@@ -387,7 +390,6 @@ export function useMatch() {
             momentum: clamp(s.momentum + (attackingSide === "home" ? 6 : -6), -100, 100),
             phase: "resolve",
             banner: `${receiver.label} ${receiver.name} takes it in stride.`,
-            defenderIdx: pickDefenderIndex(defTeam, s.chain + 1),
           };
           return finishIfDone(
             settle(push(next, `${passer.name} finds ${receiver.name}.`, attackingSide === HUMAN ? "good" : "bad")),
@@ -445,8 +447,7 @@ export function useMatch() {
               momentum: clamp(s.momentum + (attackingSide === "home" ? 8 : -8), -100, 100),
               phase: "resolve",
               banner: `Beaten! ${attacker.name} is through.`,
-              defenderIdx: pickDefenderIndex(defTeam, s.chain + 1),
-            };
+              };
             const drained =
               attackingSide === "home"
                 ? { ...next, home: drain(next.home, s0.carrierIdx, action === "sprint" ? 9 : 6) }
@@ -721,15 +722,20 @@ export function useMatch() {
       setState((prev) => ({
         ...prev,
         pendingAction: "shoot",
-        defenderIdx: pickDefenderIndex(prev.away, prev.chain),
+        defenderIdx: contestFor(prev).idx,
         phase: "shot-aim",
         lastChance: shotChance(prev.home.players[prev.carrierIdx]!, prev.progress, prev.home.activeTactic),
         banner: null,
       }));
       return;
     }
-    const response = pickAiResponse(action);
-    resolveRun(s, action, response, pickDefenderIndex(s.away, s.chain), "home");
+    const run2 = action as "dribble" | "sprint";
+    const contest = contestFor(s);
+    if (!contest.contested) {
+      resolveFreeRun(s, run2, "home");
+      return;
+    }
+    resolveRun(s, run2, pickAiResponse(action), contest.idx, "home");
   };
 
   const kickOff = () => {
@@ -865,11 +871,15 @@ export function useMatch() {
         .slice(0, 4);
       target = options[Math.floor(Math.random() * options.length)]!.i;
     }
+    if (action !== "pass" && !contestFor(s).contested) {
+      resolveFreeRun(s, action as "dribble" | "sprint", "away");
+      return;
+    }
     setState((prev) => ({
       ...prev,
       pendingAction: action,
       pendingTarget: target,
-      defenderIdx: pickDefenderIndex(prev.home, prev.chain),
+      defenderIdx: contestFor(prev).idx,
       phase: "choose-response",
       banner: `${carrier.name} is on the ball — read him.`,
     }));
