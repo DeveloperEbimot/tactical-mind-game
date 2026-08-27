@@ -1,5 +1,5 @@
 import { FORMATIONS } from "./data";
-import type { Side, TeamState } from "./types";
+import type { Mentality, Player, Side, TeamState } from "./types";
 
 export interface Pt {
   x: number;
@@ -8,7 +8,28 @@ export interface Pt {
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
-/** Live on-pitch positions for one team. Defending outfielders never cross the halfway line. */
+interface Shape {
+  /** Base shift along the attacking direction, applied always. */
+  shift: number;
+  capDef: number;
+  capMid: number;
+  capAtt: number;
+  /** Furthest up the pitch an outfielder may be while defending. */
+  defMax: number;
+  /** Deepest an outfielder may sit while defending. */
+  defMin: number;
+}
+
+const SHAPES: Record<Mentality, Shape> = {
+  attack: { shift: 16, capDef: 58, capMid: 80, capAtt: 93, defMax: 70, defMin: 42 },
+  balanced: { shift: 0, capDef: 45, capMid: 62, capAtt: 82, defMax: 49, defMin: 8 },
+  defend: { shift: -12, capDef: 30, capMid: 42, capAtt: 54, defMax: 40, defMin: 6 },
+};
+
+const capFor = (role: Player["role"], shape: Shape) =>
+  role === "DEF" ? shape.capDef : role === "MID" ? shape.capMid : shape.capAtt;
+
+/** Live on-pitch positions for one team, driven by formation + mentality. */
 export function buildPositions(args: {
   team: TeamState;
   side: Side;
@@ -21,9 +42,11 @@ export function buildPositions(args: {
   carrierAnchor?: Pt | null;
 }): Pt[] {
   const slots = FORMATIONS[args.team.formation]!.slots;
+  const shape = SHAPES[args.team.mentality ?? "balanced"];
+
   return args.team.players.map((p, i) => {
     const slot = slots[i]!;
-    let x = args.side === "home" ? slot.x : 100 - slot.x;
+    let own = slot.x; // in "own-goal = 0" space
     let y = slot.y;
 
     if (p.role === "GK") {
@@ -31,31 +54,45 @@ export function buildPositions(args: {
     }
 
     if (args.attacking && i === args.carrierIdx) {
-      // While the ball is in flight the carrier stays where he played it.
-      x = args.carrierAnchor ? args.carrierAnchor.x : args.ballX;
-      y = args.carrierAnchor ? args.carrierAnchor.y : args.ballY;
-    } else if (!args.attacking && i === args.defenderIdx) {
-      x = args.ballX + (args.side === "home" ? -4 : 4);
-      y = args.ballY + (i % 2 === 0 ? -6 : 6);
-    } else if (args.attacking) {
-      // Push up with the attack, but everyone keeps their line's discipline.
-      const shift = Math.max(0, (args.progress - 46) * 0.22);
-      const cap = p.role === "DEF" ? 45 : p.role === "MID" ? 62 : 82;
-      const pushed = Math.min(slot.x + shift, cap);
-      x = args.side === "home" ? pushed : 100 - pushed;
+      const pt = args.carrierAnchor ?? { x: args.ballX, y: args.ballY };
+      return { x: clamp(pt.x, 3, 97), y: clamp(pt.y, 6, 94) };
+    }
+
+    if (!args.attacking && i === args.defenderIdx) {
+      // The closest defender steps to the ball rather than teleporting across the pitch.
+      const x = args.ballX + (args.side === "home" ? -3.5 : 3.5);
+      const yy = args.ballY + (i % 2 === 0 ? -5 : 5);
+      return { x: clamp(x, 3, 97), y: clamp(yy, 6, 94) };
+    }
+
+    if (args.attacking) {
+      const push = Math.max(0, (args.progress - 46) * 0.22) + shape.shift;
+      own = Math.min(slot.x + push, capFor(p.role, shape));
     } else {
-      // Defending shape drops towards its own goal as the attack gets deeper.
       const drop = Math.max(0, (args.progress - 46) * 0.16);
-      x = args.side === "home" ? x - drop : x + drop;
+      own = slot.x - drop + shape.shift;
+      own = clamp(own, shape.defMin, shape.defMax);
     }
 
-    if (!args.attacking) {
-      x = args.side === "home" ? Math.min(x, 49) : Math.max(x, 51);
-    }
-
+    const x = args.side === "home" ? own : 100 - own;
     return { x: clamp(x, 3, 97), y: clamp(y, 6, 94) };
-
   });
+}
+
+/** Closest outfield opponent to the ball — the only player allowed to contest it. */
+export function nearestOpponent(
+  defPos: Pt[],
+  players: Player[],
+  ball: Pt,
+): { idx: number; dist: number } {
+  let best = { idx: 1, dist: Infinity };
+  defPos.forEach((pt, i) => {
+    const p = players[i];
+    if (!p || p.role === "GK" || p.stamina <= 3) return;
+    const dist = Math.hypot(pt.x - ball.x, pt.y - ball.y);
+    if (dist < best.dist) best = { idx: i, dist };
+  });
+  return best;
 }
 
 export function distToSegment(p: Pt, a: Pt, b: Pt) {
