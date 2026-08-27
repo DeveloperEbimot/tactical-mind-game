@@ -425,7 +425,7 @@ export function useMatch() {
       phase: "animating",
       defenderIdx: defIdx,
       pendingAction: null,
-      ballSpeed: 900,
+      ballSpeed: 1000,
       carrierAnchor: null,
       ball: { x: clamp(s.ball.x + dir * gain * 0.6, 3, 97), y: clamp(s.ball.y + (Math.random() - 0.5) * 8, 8, 92) },
       banner: `${attacker.name} ${action === "sprint" ? "sprints at" : "takes on"} ${defender.name} — ${response}!`,
@@ -537,6 +537,57 @@ export function useMatch() {
     ]);
   }
 
+  /** No opponent in range — the carrier just drives forward unopposed. */
+  function resolveFreeRun(s0: MatchState, action: "dribble" | "sprint", attackingSide: Side) {
+    const atkTeam = attackingSide === "home" ? s0.home : s0.away;
+    const attacker = atkTeam.players[s0.carrierIdx]!;
+    const gain = action === "sprint" ? 22 : 14;
+    const dir = attackingSide === "home" ? 1 : -1;
+    const to: Pt = {
+      x: clamp(s0.ball.x + dir * gain, 3, 97),
+      y: clamp(s0.ball.y + (Math.random() - 0.5) * 6, 8, 92),
+    };
+    const travel = flightTime(s0.ball, to, 34, 700, 1400);
+    run([
+      {
+        delay: 0,
+        patch: (s) => ({
+          ...s,
+          phase: "animating",
+          pendingAction: null,
+          carrierAnchor: null,
+          ballSpeed: travel,
+          ball: to,
+          banner: `${attacker.name} drives into space — nobody near him.`,
+        }),
+      },
+      {
+        delay: travel + 160,
+        patch: (s) => {
+          const next: MatchState = {
+            ...s,
+            progress: progressFromX(attackingSide, to.x),
+            lane: to.y,
+            chain: s.chain + 1,
+            minute: s.minute + 1,
+            momentum: clamp(s.momentum + (attackingSide === "home" ? 6 : -6), -100, 100),
+            phase: "resolve",
+            banner: `${attacker.name} carries it forward.`,
+          };
+          const drained =
+            attackingSide === "home"
+              ? { ...next, home: drain(next.home, s0.carrierIdx, action === "sprint" ? 7 : 4) }
+              : { ...next, away: drain(next.away, s0.carrierIdx, action === "sprint" ? 7 : 4) };
+          return finishIfDone(
+            settle(
+              push(drained, `${attacker.name} runs into open space.`, attackingSide === HUMAN ? "good" : "bad"),
+            ),
+          );
+        },
+      },
+    ]);
+  }
+
   // ---------------- open play shot ----------------
 
   function resolveShot(s0: MatchState, shotDir: ShotDir, diveDir: ShotDir, attackingSide: Side) {
@@ -548,14 +599,16 @@ export function useMatch() {
     const roll = Math.random() * 100;
     const goalX = attackingSide === "home" ? 97 : 3;
     const targetY = shotDir === "left" ? 34 : shotDir === "right" ? 66 : 50;
+    const spot = positionsFor(s0)[attackingSide][s0.carrierIdx]!;
 
     const strike = (s: MatchState): MatchState => ({
       ...s,
       phase: "animating",
       pendingShotDir: null,
       pendingAction: null,
-      ballSpeed: 620,
-      carrierAnchor: null,
+      ballSpeed: 700,
+      // The shooter stays where he struck it — only the ball travels.
+      carrierAnchor: spot,
       ball: { x: goalX, y: targetY },
       banner: `${shooter.name} shoots ${shotDir}! (${chance}%)`,
     });
@@ -580,8 +633,8 @@ export function useMatch() {
           delay: 620,
           patch: (s) => ({
             ...s,
-            ballSpeed: 520,
-            carrierAnchor: { x: s.progress > 50 ? s.ball.x - (attackingSide === "home" ? 10 : -10) : s.ball.x, y: s.lane },
+            ballSpeed: 560,
+            carrierAnchor: spot,
             ball: { x: s.ball.x - (attackingSide === "home" ? 12 : -12), y: clamp(targetY + 12, 8, 92) },
             banner: "Blocked! It deflects off a defender…",
           }),
@@ -667,8 +720,8 @@ export function useMatch() {
           progress: 88,
           pendingPen: null,
           ball: { x: goalX, y: missed ? (shot === "left" ? 12 : 88) : targetY },
-          ballSpeed: 600,
-          carrierAnchor: null,
+          ballSpeed: 620,
+          carrierAnchor: { x: attackingSide === "home" ? 82 : 18, y: 50 },
           banner: `${shooter.name} goes ${shot} — ${gk.name} ${dive === "stay" ? "stands up" : `dives ${dive}`}!`,
         }),
       },
@@ -924,6 +977,24 @@ export function useMatch() {
     });
   };
 
+  const setMentality = (mentality: Mentality) => {
+    setState((s) =>
+      s.home.mentality === mentality
+        ? s
+        : settle(
+            push(
+              { ...s, home: { ...s.home, mentality } },
+              mentality === "attack"
+                ? "Mentality: all-out attack — the whole side pushes up."
+                : mentality === "defend"
+                  ? "Mentality: defend — everyone drops into our own half."
+                  : "Mentality: balanced.",
+              "info",
+            ),
+          ),
+    );
+  };
+
   const changeFormation = (formation: FormationName) => {
     setState((s) => {
       if (s.home.formation === formation) return s;
@@ -975,6 +1046,7 @@ export function useMatch() {
     divePenalty,
     nextBeat,
     playTactic,
+    setMentality,
     substitute,
     changeFormation,
     restart,
