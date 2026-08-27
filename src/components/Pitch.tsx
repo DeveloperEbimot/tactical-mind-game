@@ -44,8 +44,12 @@ export function Pitch({ state: s, onPickTarget }: Props) {
       {dots.map((d) => (
         <div
           key={d.player.id}
-          className="absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-500 ease-out"
-          style={{ left: `${d.pt.x}%`, top: `${d.pt.y}%` }}
+          className="absolute -translate-x-1/2 -translate-y-1/2"
+          style={{
+            left: `${d.pt.x}%`,
+            top: `${d.pt.y}%`,
+            transition: "left 900ms cubic-bezier(0.33, 0, 0.25, 1), top 900ms cubic-bezier(0.33, 0, 0.25, 1)",
+          }}
         >
           <button
             type="button"
