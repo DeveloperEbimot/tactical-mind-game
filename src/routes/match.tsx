@@ -1,5 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
+import { useClub, money } from "@/game/club";
 import { Pitch } from "@/components/Pitch";
 import { FORMATIONS, TACTIC_INFO } from "@/game/data";
 import { ACTION_INFO, RESPONSE_INFO } from "@/game/engine";
@@ -11,16 +12,16 @@ import type {
   TacticCard,
 } from "@/game/types";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/match")({
   head: () => ({
     meta: [
-      { title: "Ballers Shirts — Tactical Football Duel vs AI" },
+      { title: "Match Day — Ballers Shirts" },
       {
         name: "description",
         content:
-          "A turn-based 11v11 football duel: pick actions, read your opponent, aim your shots and dive the right way. Play the tactical mind game against the AI.",
+          "Play the match: pick actions, read your opponent, aim your shots and dive the right way in an 11v11 tactical duel against the AI.",
       },
-      { property: "og:title", content: "Ballers Shirts — Tactical Football Duel" },
+      { property: "og:title", content: "Match Day — Ballers Shirts" },
       {
         property: "og:description",
         content:
@@ -57,6 +58,7 @@ function Bar({ value, tone = "accent" }: { value: number; tone?: string }) {
 }
 
 function Game() {
+  const { club, ready, update } = useClub();
   const {
     state,
     carrier,
@@ -77,12 +79,34 @@ function Game() {
     substitute,
     changeFormation,
     restart,
-  } = useMatch();
+  } = useMatch(ready ? club : undefined);
 
   const [panel, setPanel] = useState<"tactics" | "shape" | "subs" | "log">("log");
+  const paidOut = useRef(false);
   const [subOff, setSubOff] = useState<number | null>(null);
   const s = state;
   const attackingHome = s.possession === "home";
+
+  const finished = s.phase === "fulltime";
+  const result = s.home.score > s.away.score ? "win" : s.home.score === s.away.score ? "draw" : "loss";
+  const prize = result === "win" ? 2_000_000 : result === "draw" ? 900_000 : 350_000;
+
+  useEffect(() => {
+    if (!finished || !ready || paidOut.current) return;
+    paidOut.current = true;
+    update((c) => ({
+      ...c,
+      balance: c.balance + prize,
+      played: c.played + 1,
+      won: c.won + (result === "win" ? 1 : 0),
+      drawn: c.drawn + (result === "draw" ? 1 : 0),
+      lost: c.lost + (result === "loss" ? 1 : 0),
+    }));
+  }, [finished, ready, prize, result, update]);
+
+  useEffect(() => {
+    if (s.phase === "kickoff") paidOut.current = false;
+  }, [s.phase]);
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-3xl px-3 pb-10 pt-4">
@@ -93,12 +117,23 @@ function Game() {
             Exhibition · vs AI
           </p>
         </div>
-        <button
-          onClick={restart}
-          className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
-        >
-          New match
-        </button>
+        <div className="flex items-center gap-2">
+          <span className="rounded-md border border-border px-2 py-1 text-[11px] font-bold tabular-nums text-accent">
+            {money(club.balance)}
+          </span>
+          <button
+            onClick={restart}
+            className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
+          >
+            New match
+          </button>
+          <Link
+            to="/"
+            className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
+          >
+            Menu
+          </Link>
+        </div>
       </header>
 
       {/* Scoreboard */}
@@ -379,12 +414,21 @@ function Game() {
                   ? "Honours shared."
                   : "Rival United take it."}
             </p>
+            <p className="mt-2 text-sm font-bold text-accent">
+              Prize money: {money(prize)}
+            </p>
             <button
               onClick={restart}
               className="mt-3 w-full rounded-md bg-primary py-3 text-sm font-bold uppercase tracking-widest text-primary-foreground"
             >
               Rematch
             </button>
+            <Link
+              to="/"
+              className="mt-2 block w-full rounded-md border border-border py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground"
+            >
+              Back to menu
+            </Link>
           </div>
         )}
       </section>
