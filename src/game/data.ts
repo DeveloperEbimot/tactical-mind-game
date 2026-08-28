@@ -129,7 +129,7 @@ function rnd(min: number, max: number, seed: () => number) {
   return Math.round(min + seed() * (max - min));
 }
 
-function mulberry(seed: number) {
+export function mulberry(seed: number) {
   let a = seed;
   return () => {
     a |= 0;
@@ -140,7 +140,7 @@ function mulberry(seed: number) {
   };
 }
 
-function ratingsFor(role: Role, r: () => number): Ratings {
+export function ratingsFor(role: Role, r: () => number): Ratings {
   const base: Ratings = {
     shooting: rnd(45, 65, r),
     passing: rnd(55, 72, r),
@@ -181,7 +181,7 @@ function ratingsFor(role: Role, r: () => number): Ratings {
   return base;
 }
 
-const GK_STYLES: GkStyle[] = ["Shot Stopper", "Sweeper Keeper", "Commanding", "Distributor"];
+export const GK_STYLES: GkStyle[] = ["Shot Stopper", "Sweeper Keeper", "Commanding", "Distributor"];
 
 export function buildSquad(
   side: "home" | "away",
@@ -258,3 +258,17 @@ export const TACTIC_INFO: Record<
   "long-ball": { name: "Long Ball", desc: "Skip a line, tests pace & strength", side: "attack" },
   overlap: { name: "Overlap", desc: "+9 dribbling and crossing wide", side: "attack" },
 };
+
+/** Single headline number for a player, used for pricing and squad lists. */
+export function overall(p: Player): number {
+  const r = p.ratings;
+  const avg =
+    p.role === "GK"
+      ? (r.positioning + r.composure + r.interception + r.strength) / 4
+      : p.role === "DEF"
+        ? (r.tackling + r.positioning + r.strength + r.interception + r.pace) / 5
+        : p.role === "MID"
+          ? (r.passing + r.vision + r.interception + r.stamina + r.dribbling) / 5
+          : (r.shooting + r.dribbling + r.pace + r.composure + r.passing) / 5;
+  return Math.round(avg);
+}
