@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { useClub, money } from "@/game/club";
+import { useClub, money, type ClubProfile } from "@/game/club";
 import { Pitch } from "@/components/Pitch";
 import { FORMATIONS, TACTIC_INFO } from "@/game/data";
 import { ACTION_INFO, RESPONSE_INFO } from "@/game/engine";
@@ -31,7 +31,7 @@ export const Route = createFileRoute("/match")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: Game,
+  component: MatchPage,
 });
 
 const ACTIONS: AttackAction[] = ["dribble", "pass", "sprint", "shoot"];
@@ -57,8 +57,26 @@ function Bar({ value, tone = "accent" }: { value: number; tone?: string }) {
   );
 }
 
-function Game() {
+function MatchPage() {
   const { club, ready, update } = useClub();
+  if (!ready) {
+    return (
+      <main className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
+        Warming up…
+      </main>
+    );
+  }
+  return <Game club={club} update={update} />;
+}
+
+function Game({
+  club,
+  update,
+}: {
+  club: ClubProfile;
+  update: (patch: Partial<ClubProfile> | ((c: ClubProfile) => ClubProfile)) => void;
+}) {
+  const ready = true;
   const {
     state,
     carrier,
@@ -79,7 +97,7 @@ function Game() {
     substitute,
     changeFormation,
     restart,
-  } = useMatch(ready ? club : undefined);
+  } = useMatch(club);
 
   const [panel, setPanel] = useState<"tactics" | "shape" | "subs" | "log">("log");
   const paidOut = useRef(false);
