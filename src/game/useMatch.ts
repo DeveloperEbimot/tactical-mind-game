@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { buildSquad, buildBench, reshape, FORMATIONS } from "./data";
+import type { ClubProfile } from "./club";
 import { gkSaveBonus, pickAiAction, pickAiResponse, shotChance } from "./engine";
 import { buildPositions, distToSegment, nearestOpponent, type Pt } from "./positions";
 import type {
@@ -22,15 +23,24 @@ export type DiveDir = "left" | "right" | "stay";
 const HUMAN: Side = "home";
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
-function makeTeam(side: Side, formation: FormationName, seed: number): TeamState {
+function makeTeam(
+  side: Side,
+  formation: FormationName,
+  seed: number,
+  club?: ClubProfile,
+): TeamState {
+  const isHome = side === "home";
   return {
     side,
-    name: side === "home" ? "Ballers FC" : "Rival United",
-    short: side === "home" ? "BAL" : "RIV",
+    name: isHome ? (club?.name ?? "Ballers FC") : "Rival United",
+    short: isHome ? (club?.short ?? "BAL") : "RIV",
     formation,
-    mentality: "balanced",
+    mentality: isHome ? (club?.mentality ?? "balanced") : "balanced",
     players: buildSquad(side, formation, seed),
-    bench: buildBench(side, seed),
+    bench:
+      isHome && club?.signings?.length
+        ? [...club.signings, ...buildBench(side, seed)].slice(0, 7)
+        : buildBench(side, seed),
     subsLeft: 5,
     score: 0,
     tacticsLeft: Infinity,
@@ -141,9 +151,9 @@ function progressFromX(side: Side, x: number) {
   return clamp(side === "home" ? x : 100 - x, 5, 96);
 }
 
-function initial(seedA: number, seedB: number): MatchState {
+function initial(seedA: number, seedB: number, club?: ClubProfile): MatchState {
   const base = {
-    home: makeTeam("home", "4-3-3", seedA),
+    home: makeTeam("home", club?.formation ?? "4-3-3", seedA, club),
     away: makeTeam("away", "4-4-2", seedB),
     possession: "home" as Side,
     carrierIdx: 6,
@@ -169,14 +179,12 @@ function initial(seedA: number, seedB: number): MatchState {
   return { ...base, ball: { x: 50, y: 50 } };
 }
 
-export function useMatch() {
+export function useMatch(club?: ClubProfile) {
   const logId = useRef(0);
   const timers = useRef<number[]>([]);
-  const [state, setState] = useState<MatchState>(() => initial(7, 42));
+  const [state, setState] = useState<MatchState>(() => initial(7, 42, club));
   const ref = useRef(state);
-  useEffect(() => {
-    ref.current = state;
-  }, [state]);
+  ref.current = state;
   useEffect(() => () => timers.current.forEach((t) => clearTimeout(t)), []);
 
   type Step = { delay: number; patch: (s: MatchState) => MatchState };
@@ -1014,11 +1022,14 @@ export function useMatch() {
     });
   };
 
+  const clubRef = useRef(club);
+  clubRef.current = club;
+
   const restart = () => {
     logId.current = 0;
     timers.current.forEach((t) => clearTimeout(t));
     timers.current = [];
-    setState(initial(Math.floor(Math.random() * 9999), Math.floor(Math.random() * 9999)));
+    setState(initial(Math.floor(Math.random() * 9999), Math.floor(Math.random() * 9999), clubRef.current));
   };
 
   const carrier: Player =
